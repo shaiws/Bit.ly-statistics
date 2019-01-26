@@ -41,7 +41,7 @@ class Link {
 
 public class JsonReader {
 
-	protected static final String accesToken = "d30800db790c77c71b1d347c0680a5d215115e95";
+	protected static final String accesToken = [YOUR_ACCESS_TOKEN];
 
 	private static String readAll(Reader rd) throws IOException {
 		StringBuilder sb = new StringBuilder();
