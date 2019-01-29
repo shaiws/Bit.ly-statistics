@@ -17,6 +17,7 @@ import java.util.Scanner;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
@@ -58,58 +59,46 @@ public class BitlyClicksCounter {
 				try {
 					JSONfile = readJsonFromUrl("https://api-ssl.bitly.com/v3/user/link_history?access_token="
 							+ accessToken.getText() + "&format=json&limit=100");
-				} catch (JSONException | IOException e2) {
-					e2.printStackTrace();
-				}
-				JSONObject data = JSONfile.getJSONObject("data");
-				JSONArray link_history = data.getJSONArray("link_history");
+					JSONObject data = JSONfile.getJSONObject("data");
+					JSONArray link_history = data.getJSONArray("link_history");
 
-				for (int i = 0; i < link_history.length(); i++) {
-					links.put(i, new Link(link_history.getJSONObject(i).get("link").toString(),
-							link_history.getJSONObject(i).get("title").toString()));
-				}
-				Scanner s;
-				for (int j = 0; j < links.size(); j++) {
-					String link = links.get(j).link;
-					try {
+					for (int i = 0; i < link_history.length(); i++) {
+						links.put(i, new Link(link_history.getJSONObject(i).get("link").toString(),
+								link_history.getJSONObject(i).get("title").toString()));
+					}
+					Scanner s;
+					for (int j = 0; j < links.size(); j++) {
+						String link = links.get(j).link;
 						s = new Scanner(new URL("https://api-ssl.bitly.com/v3/link/clicks?access_token="
 								+ accessToken.getText() + "&format=txt&limit=100&link=" + link).openStream());
 						int clicks = s.nextInt();
 						links.get(j).clicks = clicks;
 						statistics += links.get(j).toString();
-					} catch (JSONException | IOException e1) {
-						e1.printStackTrace();
 					}
-				}
-				File file = null;
-				try {
-					file = new File((System.getProperty("user.home") + "\\Desktop\\Statics.txt"));
+					File file = null;
+					file = new File((System.getProperty("user.home") + "\\Desktop\\Clicks counts.txt"));
 					if (file.exists())
 						file.delete();
 					file.createNewFile();
 					Files.write(Paths.get(file.getAbsolutePath()), statistics.getBytes(), StandardOpenOption.APPEND);
 					file.setWritable(false);
-				} catch (IOException e1) {
-
-				}
-				try {
 					Runtime.getRuntime().exec("notepad " + file.getAbsolutePath());
-				} catch (IOException e1) {
-					e1.printStackTrace();
+					frame.dispose();
+				} catch (JSONException | IOException e2) {
+					JOptionPane.showMessageDialog(null, "Invalid access token", "Error", JOptionPane.ERROR_MESSAGE);
 				}
-
-				frame.dispose();
 			}
 		});
 		panel.add(accessToken);
 		panel.add(buttun);
 		frame.add(panel);
 		frame.pack();
-		frame.setSize(200, 100);
+		frame.setBounds(200, 100, 300, 100);
 		frame.setResizable(false);
 		frame.setVisible(true);
 		frame.setAlwaysOnTop(true);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
 	}
 
 	private static String readAll(Reader rd) throws IOException {
