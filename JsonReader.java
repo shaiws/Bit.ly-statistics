@@ -18,6 +18,7 @@ import java.util.Scanner;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.JTextField;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -39,9 +40,77 @@ class Link {
 	}
 }
 
-public class JsonReader {
+public class BitlyClicksCounter {
+	private static String statistics = "";
 
-	protected static final String accesToken = [YOUR_ACCESS_TOKEN];
+	public static void main(String[] args) throws JSONException, IOException {
+		Map<Integer, Link> links = new Hashtable<Integer, Link>();
+		JFrame frame = new JFrame("BitlyClicksCounter");
+		JPanel panel = new JPanel();
+		JTextField accessToken = new JTextField("Enter access token here");
+
+		JButton buttun = new JButton("Start");
+		buttun.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				JSONObject JSONfile = null;
+				try {
+					JSONfile = readJsonFromUrl("https://api-ssl.bitly.com/v3/user/link_history?access_token="
+							+ accessToken.getText() + "&format=json&limit=100");
+				} catch (JSONException | IOException e2) {
+					e2.printStackTrace();
+				}
+				JSONObject data = JSONfile.getJSONObject("data");
+				JSONArray link_history = data.getJSONArray("link_history");
+
+				for (int i = 0; i < link_history.length(); i++) {
+					links.put(i, new Link(link_history.getJSONObject(i).get("link").toString(),
+							link_history.getJSONObject(i).get("title").toString()));
+				}
+				Scanner s;
+				for (int j = 0; j < links.size(); j++) {
+					String link = links.get(j).link;
+					try {
+						s = new Scanner(new URL("https://api-ssl.bitly.com/v3/link/clicks?access_token="
+								+ accessToken.getText() + "&format=txt&limit=100&link=" + link).openStream());
+						int clicks = s.nextInt();
+						links.get(j).clicks = clicks;
+						statistics += links.get(j).toString();
+					} catch (JSONException | IOException e1) {
+						e1.printStackTrace();
+					}
+				}
+				File file = null;
+				try {
+					file = new File((System.getProperty("user.home") + "\\Desktop\\Statics.txt"));
+					if (file.exists())
+						file.delete();
+					file.createNewFile();
+					Files.write(Paths.get(file.getAbsolutePath()), statistics.getBytes(), StandardOpenOption.APPEND);
+					file.setWritable(false);
+				} catch (IOException e1) {
+
+				}
+				try {
+					Runtime.getRuntime().exec("notepad " + file.getAbsolutePath());
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+
+				frame.dispose();
+			}
+		});
+		panel.add(accessToken);
+		panel.add(buttun);
+		frame.add(panel);
+		frame.pack();
+		frame.setSize(200, 100);
+		frame.setResizable(false);
+		frame.setVisible(true);
+		frame.setAlwaysOnTop(true);
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+	}
 
 	private static String readAll(Reader rd) throws IOException {
 		StringBuilder sb = new StringBuilder();
@@ -62,64 +131,5 @@ public class JsonReader {
 		} finally {
 			is.close();
 		}
-	}
-
-	protected static String statistics = "";
-
-	public static void main(String[] args) throws JSONException, IOException {
-		Map<Integer, Link> links = new Hashtable<Integer, Link>();
-		JFrame f = new JFrame();
-		JPanel p = new JPanel();
-		JButton b = new JButton("Start");
-		b.addActionListener(new ActionListener() {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				JSONObject file = null;
-				try {
-					file = readJsonFromUrl("https://api-ssl.bitly.com/v3/user/link_history?access_token=" + accesToken
-							+ "&format=json&limit=100");
-				} catch (JSONException | IOException e2) {
-					e2.printStackTrace();
-				}
-				JSONObject data = file.getJSONObject("data");
-				JSONArray link_history = data.getJSONArray("link_history");
-
-				for (int i = 0; i < link_history.length(); i++) {
-					links.put(i, new Link(link_history.getJSONObject(i).get("link").toString(),
-							link_history.getJSONObject(i).get("title").toString()));
-				}
-				Scanner s;
-				for (int j = 0; j < links.size(); j++) {
-					String link = links.get(j).link;
-					try {
-						s = new Scanner(new URL("https://api-ssl.bitly.com/v3/link/clicks?access_token=" + accesToken
-								+ "&format=txt&limit=100&link=" + link).openStream());
-						int clicks = s.nextInt();
-						links.get(j).clicks = clicks;
-						statistics += links.get(j).toString();
-					} catch (JSONException | IOException e1) {
-						e1.printStackTrace();
-					}
-				}
-				try {
-					File f = new File((System.getProperty("user.home") + "\\Desktop\\Statics.txt"));
-					if (f.exists())
-						f.delete();
-					f.createNewFile();
-					Files.write(Paths.get(f.getAbsolutePath()), statistics.getBytes(), StandardOpenOption.APPEND);
-					f.setWritable(false);
-				} catch (IOException e1) {
-
-				}
-				f.dispose();
-			}
-		});
-		p.add(b);
-		f.add(p);
-		f.pack();
-		f.setVisible(true);
-		f.setAlwaysOnTop(true);
-		f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	}
 }
